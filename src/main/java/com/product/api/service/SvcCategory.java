@@ -1,9 +1,3 @@
-/*
- Equipo: 
-        Gallardo Valdez Brayan Alexis
-        Torres Miguel Emiliano
-*/
-
 package com.product.api.service;
 
 import java.util.List;
