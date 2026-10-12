@@ -11,6 +11,7 @@ import com.product.api.dto.DtoCategoryIn;
 import com.product.api.entity.Category;
 import com.product.api.repository.RepoCategory;
 import com.product.exception.ApiException;
+import com.product.exception.DBAccessException;
 
 @Service
 public class SvcCategoryImp implements SvcCategory {
@@ -21,19 +22,37 @@ public class SvcCategoryImp implements SvcCategory {
         this.repo = repo;
     }
 
+    private void validateId(Integer id) {
+        if (repo.findById(id).isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "El id de la categoría no existe");
+        }
+    }
+
     @Override
     public ResponseEntity<List<Category>> findAll() {
-        return new ResponseEntity<>(repo.getCategories(), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(repo.getCategories(), HttpStatus.OK);
+        } catch (DataAccessException e) {
+            throw new DBAccessException(e);
+        }
     }
 
     @Override
     public ResponseEntity<List<Category>> findActive() {
-        return new ResponseEntity<>(repo.findByStatusOrderByCategory(1), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(repo.findByStatusOrderByCategory(1), HttpStatus.OK);
+        } catch (DataAccessException e) {
+            throw new DBAccessException(e);
+        }
     }
 
     @Override
     public ResponseEntity<List<Category>> findChilds(Integer id) {
-        return new ResponseEntity<>(repo.findByParentCategoryId(id), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(repo.findByParentCategoryId(id), HttpStatus.OK);
+        } catch (DataAccessException e) {
+            throw new DBAccessException(e);
+        }
     }
 
     @Override
@@ -63,6 +82,7 @@ public class SvcCategoryImp implements SvcCategory {
 
     @Override
     public void update(DtoCategoryIn dto, Integer id) {
+        validateId(id); 
         try {
             repo.update(id, dto.getCategory(), dto.getTag(), dto.getParentCategoryId());
         } catch (DataAccessException e) {
@@ -88,6 +108,7 @@ public class SvcCategoryImp implements SvcCategory {
 
     @Override
     public void enable(Integer id) {
+        validateId(id); 
         try {
             repo.updateStatus(id, 1);
         } catch (DataAccessException e) {
@@ -97,6 +118,7 @@ public class SvcCategoryImp implements SvcCategory {
 
     @Override
     public void disable(Integer id) {
+        validateId(id);  
         try {
             repo.updateStatus(id, 0);
         } catch (DataAccessException e) {
