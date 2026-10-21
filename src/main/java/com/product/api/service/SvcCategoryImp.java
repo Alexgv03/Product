@@ -1,3 +1,4 @@
+
 package com.product.api.service;
 
 import java.util.List;
@@ -29,14 +30,20 @@ public class SvcCategoryImp implements SvcCategory {
     }
 
     private void validateCategory(DtoCategoryIn dto, Integer currentId) {
-        Category category = repo.findByCategory(dto.getCategory());
-        if (category != null && (currentId == null || !category.getCategoryId().equals(currentId))) {
-            throw new ApiException(HttpStatus.CONFLICT, "El nombre de la categoría ya está en uso");
+        List<Category> categories = repo.findByCategory(dto.getCategory());
+        if (!categories.isEmpty()) {
+            Category category = categories.get(0);
+            if (currentId == null || !category.getCategoryId().equals(currentId)) {
+                throw new ApiException(HttpStatus.CONFLICT, "El nombre de la categoría ya está en uso");
+            }
         }
 
-        Category tag = repo.findByTag(dto.getTag());
-        if (tag != null && (currentId == null || !tag.getCategoryId().equals(currentId))) {
-            throw new ApiException(HttpStatus.CONFLICT, "El tag de la categoría ya está en uso");
+        List<Category> tags = repo.findByTag(dto.getTag());
+        if (!tags.isEmpty()) {
+            Category tag = tags.get(0);
+            if (currentId == null || !tag.getCategoryId().equals(currentId)) {
+                throw new ApiException(HttpStatus.CONFLICT, "El tag de la categoría ya está en uso");
+            }
         }
 
         if (dto.getParentCategoryId() != null) {

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.product.api.entity.Category;
 
+@Repository
 public interface RepoCategory extends JpaRepository<Category, Integer> {
 
     @Query(value = "SELECT * FROM category ORDER BY category", nativeQuery = true)
@@ -26,8 +27,8 @@ public interface RepoCategory extends JpaRepository<Category, Integer> {
 
     List<Category> findByParentCategoryId(@Param("parent_category_id") Integer parentCategoryId);
 
-    Category findByCategory(String category);
-    Category findByTag(String tag);
+    List<Category> findByCategory(String category);
+    List<Category> findByTag(String tag);
 
     @Modifying(clearAutomatically=true, flushAutomatically=true)
     @Transactional
