@@ -28,6 +28,28 @@ public class SvcCategoryImp implements SvcCategory {
         }
     }
 
+    private void validateCategory(DtoCategoryIn dto, Integer currentId) {
+        Category category = repo.findByCategory(dto.getCategory());
+        if (category != null && (currentId == null || !category.getCategoryId().equals(currentId))) {
+            throw new ApiException(HttpStatus.CONFLICT, "El nombre de la categoría ya está en uso");
+        }
+
+        Category tag = repo.findByTag(dto.getTag());
+        if (tag != null && (currentId == null || !tag.getCategoryId().equals(currentId))) {
+            throw new ApiException(HttpStatus.CONFLICT, "El tag de la categoría ya está en uso");
+        }
+
+        if (dto.getParentCategoryId() != null) {
+            if (dto.getParentCategoryId().equals(currentId)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Una categoría no puede ser padre de sí misma");
+            }
+            Category parent = repo.findById(dto.getParentCategoryId()).orElse(null);
+            if (parent == null || parent.getStatus() == 0) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría padre no existe o está inactiva");
+            }
+        }
+    }
+
     @Override
     public ResponseEntity<List<Category>> findAll() {
         try {
@@ -57,58 +79,28 @@ public class SvcCategoryImp implements SvcCategory {
 
     @Override
     public void create(DtoCategoryIn dto) {
+        validateCategory(dto, null);
         try {
             repo.create(dto.getCategory(), dto.getTag(), dto.getParentCategoryId());
         } catch (DataAccessException e) {
-            Throwable root = e.getRootCause();
-            String msg = (root != null) ? root.getMessage() : e.getMessage();
-            
-            if (msg != null && msg.contains("ux_category")) {
-                throw new ApiException(HttpStatus.CONFLICT, "El nombre de la categoría ya está en uso");
-            }
-            if (msg != null && msg.contains("ux_tag")) {
-                throw new ApiException(HttpStatus.CONFLICT, "El tag de la categoría ya está en uso");
-            }
-            if (msg != null && msg.contains("La categoría padre no existe o está inactiva")) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría padre no existe o está inactiva");
-            }
-            if (msg != null && msg.contains("Una categoría no puede ser padre de sí misma")) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Una categoría no puede ser padre de sí misma");
-            }
-            
             throw new ApiException(HttpStatus.BAD_REQUEST, "Error al crear la categoría");
         }
     }
 
     @Override
     public void update(DtoCategoryIn dto, Integer id) {
-        validateId(id); 
+        validateId(id);
+        validateCategory(dto, id);
         try {
             repo.update(id, dto.getCategory(), dto.getTag(), dto.getParentCategoryId());
         } catch (DataAccessException e) {
-            Throwable root = e.getRootCause();
-            String msg = (root != null) ? root.getMessage() : e.getMessage();
-            
-            if (msg != null && msg.contains("ux_category")) {
-                throw new ApiException(HttpStatus.CONFLICT, "El nombre de la categoría ya está en uso");
-            }
-            if (msg != null && msg.contains("ux_tag")) {
-                throw new ApiException(HttpStatus.CONFLICT, "El tag de la categoría ya está en uso");
-            }
-            if (msg != null && msg.contains("La categoría padre no existe o está inactiva")) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La categoría padre no existe o está inactiva");
-            }
-            if (msg != null && msg.contains("Una categoría no puede ser padre de sí misma")) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Una categoría no puede ser padre de sí misma");
-            }
-            
             throw new ApiException(HttpStatus.BAD_REQUEST, "Error al actualizar la categoría");
         }
     }
 
     @Override
     public void enable(Integer id) {
-        validateId(id); 
+        validateId(id);
         try {
             repo.updateStatus(id, 1);
         } catch (DataAccessException e) {
@@ -118,16 +110,18 @@ public class SvcCategoryImp implements SvcCategory {
 
     @Override
     public void disable(Integer id) {
-        validateId(id);  
+        validateId(id);
+        
+        List<Category> childs = repo.findByParentCategoryId(id);
+        for (Category c : childs) {
+            if (c.getStatus() == 1) {
+                throw new ApiException(HttpStatus.CONFLICT, "La categoría tiene subcategorías activas");
+            }
+        }
+
         try {
             repo.updateStatus(id, 0);
         } catch (DataAccessException e) {
-            Throwable root = e.getRootCause();
-            String msg = (root != null) ? root.getMessage() : e.getMessage();
-            
-            if (msg != null && msg.contains("No es posible eliminar una categoría si tiene categorías hijas")) {
-                throw new ApiException(HttpStatus.CONFLICT, "La categoría tiene subcategorías activas");
-            }
             throw new ApiException(HttpStatus.BAD_REQUEST, "Error al desactivar la categoría");
         }
     }
