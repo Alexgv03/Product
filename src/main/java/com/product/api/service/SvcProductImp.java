@@ -24,7 +24,6 @@ public class SvcProductImp implements SvcProduct {
     @Autowired
     RepoProduct repo;
 
-    // Inyectamos RepoCategory para poder validar que la categoría asignada exista
     @Autowired
     RepoCategory repoCategory;
 
@@ -38,7 +37,6 @@ public class SvcProductImp implements SvcProduct {
     }
 
     private void validateProduct(DtoProductIn dto, Integer currentId) {
-        // Validar GTIN único
         List<Product> gtins = repo.findByGtin(dto.getGtin());
         if (!gtins.isEmpty()) {
             Product p = gtins.get(0);
@@ -47,7 +45,6 @@ public class SvcProductImp implements SvcProduct {
             }
         }
 
-        // Validar Producto único
         List<Product> products = repo.findByProduct(dto.getProduct());
         if (!products.isEmpty()) {
             Product p = products.get(0);
@@ -56,7 +53,6 @@ public class SvcProductImp implements SvcProduct {
             }
         }
 
-        // Validar que la categoría exista
         if (repoCategory.findById(dto.getCategory_id()).isEmpty()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "El id de categoría no existe");
         }
@@ -76,7 +72,6 @@ public class SvcProductImp implements SvcProduct {
     public ResponseEntity<DtoProductOut> getProduct(Integer id) {
         validateProductId(id);
         try {
-            // Obtenemos el producto de la BD, lo transformamos y lo devolvemos
             Product product = repo.findById(id).get();
             return new ResponseEntity<>(mapper.toDtoOut(product), HttpStatus.OK);
         } catch (DataAccessException e) {
